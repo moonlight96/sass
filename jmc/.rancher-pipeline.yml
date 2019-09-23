@@ -1,0 +1,60 @@
+stages:
+  - name: Build
+    steps:
+      - publishImageConfig:
+          dockerfilePath: ./Dockerfile
+          buildContext: .
+          tag: harbor.weyesns.com/app-tenant/${CICD_GIT_REPO_NAME}:${CICD_GIT_BRANCH}-${CICD_EXECUTION_ID}
+          pushRemote: true
+          registry: harbor.weyesns.com
+        env:
+          PLUGIN_DEBUG: "true"
+          PLUGIN_INSECURE: "true"
+        when:
+          branch: [dev,test]
+      - publishImageConfig:
+          dockerfilePath: ./Dockerfile
+          buildContext: .
+          tag: harbor.weyesns.com/app-tenant/${CICD_GIT_REPO_NAME}:${CICD_GIT_BRANCH}-${CICD_GIT_COMMIT}
+          pushRemote: true
+          registry: harbor.weyesns.com
+        env:
+          PLUGIN_DEBUG: "true"
+          PLUGIN_INSECURE: "true"
+        when:
+          branch: [master]
+  - name: Deploy
+    steps:
+      - runScriptConfig:
+          image: harbor.weyesns.com/base/deploy:1.0.2
+          shellScript: |-
+            set -e
+            export YAML_PATH="./deployment.yaml"
+            export CICD_IMAGE="harbor.weyesns.com/app-tenant/${CICD_GIT_REPO_NAME}"
+            export CICD_IMAGE_TAG="${CICD_GIT_BRANCH}-${CICD_EXECUTION_ID}"
+            sh /kapply.sh
+        when:
+          branch: [dev,test]
+      - runScriptConfig:
+          image: harbor.weyesns.com/base/deploy:1.0.2
+          shellScript: |-
+            set -e
+            export YAML_PATH="./deployment.yaml"
+            export CICD_IMAGE="harbor.weyescloud.com/app-tenant/${CICD_GIT_REPO_NAME}"
+            export CICD_IMAGE_TAG="${CICD_GIT_BRANCH}-${CICD_GIT_COMMIT}"
+            sh /kapply.sh
+        when:
+          branch: master
+branch:
+  include:
+  - dev
+  - test
+  - master
+notification:
+  recipients:
+    - recipient: http://192.168.26.178:18306/notify/pipelines
+      notifier: c-4chc9:n-v58br
+  condition:
+    - Success
+    - Changed
+    - Failed

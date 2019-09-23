@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${CICD_GIT_REPO_NAME}
+  labels:
+    app: ${CICD_GIT_REPO_NAME}
+    env: ${CICD_GIT_BRANCH}
+    build: ${CICD_EXECUTION_ID}
+    tag: "${CICD_GIT_TAG}"
+  namespace: "app-tenant"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ${CICD_GIT_REPO_NAME}
+  template:
+    metadata:
+      labels:
+        app: ${CICD_GIT_REPO_NAME}
+        env: ${CICD_GIT_BRANCH}
+        build: ${CICD_EXECUTION_ID}
+        tag: "${CICD_GIT_TAG}"
+    spec:
+      imagePullSecrets:
+      - name: harbor
+      containers:
+      - name: ${CICD_GIT_REPO_NAME}
+        image: ${CICD_IMAGE}:${CICD_IMAGE_TAG}
+        ports:
+        - name: http
+          containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${CICD_GIT_REPO_NAME}
+  labels:
+    app: ${CICD_GIT_REPO_NAME}
+    env: ${CICD_GIT_BRANCH}
+    build: ${CICD_EXECUTION_ID}
+    tag: "${CICD_GIT_TAG}"
+  namespace: "app-tenant"
+spec:
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: http
+  selector:
+    app: ${CICD_GIT_REPO_NAME}

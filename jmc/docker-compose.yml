@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+    base:
+       container_name: jmt-backend
+       image: harbor.weyesns.com/base/nginx:1.17
+       ports:
+         - "8088:80"
+       volumes:
+         - "./src:/usr/share/nginx/html"
+       stdin_open: true 
+       tty: true
+       privileged: true
+       entrypoint: ["nginx","-g",'daemon off;']
